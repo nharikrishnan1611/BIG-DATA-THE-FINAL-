@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Fake News Verification with Evidence & Source Retrieval</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- Modern Inter typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top App Navigation Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <h1 class="brand-title">AI Fake News Verification</h1>
+        <p class="brand-subtitle">Analyze a claim and inspect the evidence behind the result.</p>
+      </div>
+    </div>
+    
+    <nav class="nav-links">
+      <button class="nav-btn active" data-tab="tab-dashboard">
+        <span>📊</span> Dashboard
+      </button>
+      <button class="nav-btn" data-tab="tab-history" id="nav-history-btn">
+        <span>🕒</span> History
+      </button>
+      <button class="nav-btn" data-tab="tab-bigdata">
+        <span>⚡</span> Big Data Layer
+      </button>
+      <button class="nav-btn" data-tab="tab-methodology">
+        <span>📖</span> Methodology
+      </button>
+      <a href="/download-paper" class="nav-btn" style="background: #ffffff; color: #000000; font-weight: 800; text-decoration: none; margin-left: 0.35rem;" download>
+        <span>📥</span> Paper (.docx)
+      </a>
+    </nav>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="app-main">
+
+    <!-- ====================================================================
+         TAB 1: MAIN TWO-COLUMN VERIFICATION DASHBOARD
+         ==================================================================== -->
+    <div id="tab-dashboard" class="tab-pane active">
+      <div class="dashboard-grid">
+
+        <!-- ==========================================
+             LEFT SIDE: Content to Verify
+             ========================================== -->
+        <section class="left-column">
+          <div class="panel-card">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <span style="font-size: 1.1rem;">📝</span>
+                <h2 class="panel-title">Content to Verify</h2>
+              </div>
+              <span class="badge-tag" style="background: rgba(255,255,255,0.06); color: #94a3b8;">INPUT CONSOLE</span>
+            </div>
+
+            <!-- Input Tabs -->
+            <div class="input-tab-bar">
+              <button class="input-tab-btn active" data-mode="text">Text / Claim</button>
+              <button class="input-tab-btn" data-mode="url">Article URL</button>
+              <button class="input-tab-btn" data-mode="image">Image / OCR</button>
+            </div>
+
+            <!-- Mode 1: Text Area -->
+            <div id="mode-text-box" class="input-mode-content">
+              <textarea 
+                id="input-text-area" 
+                class="app-textarea" 
+                placeholder="Paste a news headline, article text, or social-media claim..."
+              >Government secretly announces that all public schools will remain closed for three months.</textarea>
+            </div>
+
+            <!-- Mode 2: URL Input -->
+            <div id="mode-url-box" class="input-mode-content" style="display: none;">
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem;">
+                <input 
+                  type="url" 
+                  id="input-url-field" 
+                  class="app-input" 
+                  placeholder="Paste article/news URL (e.g. https://reuters.com/...)"
+                >
+                <button id="btn-fetch-url" class="btn-primary" style="width: auto; padding: 0 1rem; font-size: 0.8rem;">
+                  Fetch
+                </button>
+              </div>
+              <div id="url-scrape-status" style="font-size: 0.78rem; color: var(--text-dim);"></div>
+            </div>
+
+            <!-- Mode 3: Image / OCR Input -->
+            <div id="mode-image-box" class="input-mode-content" style="display: none;">
+              <div class="file-dropzone" id="image-dropzone">
+                <div class="dropzone-icon">📷</div>
+                <div class="dropzone-label">
+                  <strong>Click or Drag screenshot / image here</strong><br>
+                  <span style="font-size: 0.75rem; color: var(--text-dim);">PNG, JPG, WebP supported (PyTorch EasyOCR)</span>
+                </div>
+                <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+              </div>
+              <div id="image-preview-strip" class="file-preview-strip" style="display: none;">
+                <span id="image-filename" style="color: #93c5fd;">image.png</span>
+                <span id="ocr-badge-status" class="badge-tag" style="background: rgba(16,185,129,0.2); color:#6ee7b7;">OCR Ready</span>
+              </div>
+            </div>
+
+            <!-- Sample Quick-Claims for Instant Demo -->
+            <div class="sample-chips-label">Sample Test Claims</div>
+            <div class="sample-chips-list">
+              <button class="chip-btn" data-sample="school_closure">School Closure Rumor</button>
+              <button class="chip-btn" data-sample="nasa_space">NASA Lunar Deep Space Comm</button>
+              <button class="chip-btn" data-sample="garlic_cure">Viral Garlic Miracle Cure</button>
+              <button class="chip-btn" data-sample="bank_collapse">Secret Bank Currency Barcode</button>
+              <button class="chip-btn" data-sample="who_guidelines">WHO Clinical Health Updates</button>
+            </div>
+
+            <!-- Action Button -->
+            <button id="btn-verify-claim" class="btn-primary">
+              <span id="btn-verify-text">VERIFY</span>
+            </button>
+
+            <!-- Loading Spinner State -->
+            <div id="verification-spinner" class="spinner-container">
+              <div class="spinner"></div>
+              <span>Searching live sources & extracting evidence...</span>
+            </div>
+
+            <!-- Submitted Content & Extracted Claim Inspection -->
+            <div id="content-inspection-box" class="content-meta-box">
+              <div class="meta-field">
+                <span class="meta-field-label">Submitted Content</span>
+                <div id="display-submitted-content" class="meta-field-value" style="font-size: 0.84rem; max-height: 80px; overflow-y: auto;">
+                  Government secretly announces that all public schools will remain closed for three months.
+                </div>
+              </div>
+
+              <div class="meta-field">
+                <span class="meta-field-label">Extracted Claim (Search Entity)</span>
+                <div id="display-extracted-claim" class="meta-field-value" style="color: #ffffff; font-weight: 700;">
+                  Government secretly announces that all public schools will remain closed for three months.
+                </div>
+              </div>
+
+              <div class="meta-field-row">
+                <div class="meta-field">
+                  <span class="meta-field-label">Detected Language</span>
+                  <div id="display-language" class="meta-field-value">English (en)</div>
+                </div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Source URL / Pipeline</span>
+                  <div id="display-source-origin" class="meta-field-value">Direct User Submission</div>
+                </div>
+              </div>
+
+              <div id="ocr-indicator-pill" style="display: none; font-size: 0.72rem; color: #ffffff; background: #141414; padding: 0.35rem 0.65rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); margin-top: 0.3rem;">
+                OCR Notice: Content extracted via EasyOCR with PyTorch
+              </div>
+            </div>
+
+            <!-- "WHY DID THE MODEL FLAG THIS?" Panel -->
+            <div id="model-explanation-card" class="model-explanation-card">
+              <div class="model-header-row">
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.06em;">
+                  WHY DID THE MODEL FLAG THIS?
+                </div>
+                <span id="model-pred-pill" class="model-pred-badge pred-misleading">MISLEADING</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.78rem; color: var(--text-muted);">Model Confidence:</span>
+                <span id="model-conf-text" style="font-size: 0.82rem; font-weight: 700; color: #ffffff;">Moderate (64.0%)</span>
+              </div>
+
+              <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.35rem;">Important stylistic features detected:</div>
+              <div id="model-feature-pills" class="feature-pills-list">
+                <span class="feature-pill">government secretly</span>
+                <span class="feature-pill">secretly</span>
+                <span class="feature-pill">announces</span>
+                <span class="feature-pill">closed</span>
+              </div>
+
+              <p id="model-explanation-narrative" style="font-size: 0.82rem; color: var(--text-bright); line-height: 1.5; margin-top: 0.5rem;">
+                The model detected stylistic patterns consistent with sensationalist or speculative rhetoric.
+              </p>
+
+              <div class="mandatory-disclaimer">
+                Model prediction is not factual proof.
+              </div>
+            </div>
+
+            <!-- Optional Rapid-Spread Burst Detection Box -->
+            <div id="burst-alert-container" class="burst-alert-box" style="display: none;">
+              <div class="burst-alert-icon">⚡</div>
+              <div class="burst-alert-content">
+                <div class="burst-alert-title" id="burst-title">Rapid Spread Detected</div>
+                <div class="burst-alert-desc" id="burst-desc">
+                  Viral velocity spike: <strong id="burst-velocity-stat" style="color: #ffffff;">520 mentions / 10 minutes</strong> (Normal baseline: 22/10m).
+                  <br><span style="font-weight: 700; color: #ffffff;">Priority for human verification.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- ===============================================================
+             RIGHT SIDE: SOURCE & SPREAD VERIFICATION
+             =============================================================== -->
+        <section class="right-column">
+          <div class="panel-card highlight-evidence">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <h2 class="panel-title" style="color: #ffffff; font-size: 1.05rem;">SOURCE & SPREAD VERIFICATION</h2>
+              </div>
+              <span class="badge-tag badge-primary-feature">Evidence & Spread Engine</span>
+            </div>
+
+            <!-- Retrieval Timestamp & Limitation Notice -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; padding: 0.5rem 0.75rem; background: #000000; border: 1px solid var(--border-hairline); border-radius: 4px;">
+              <span><strong style="color: #ffffff;" id="data-retrieved-timestamp">Data retrieved: 25 Sep 2026, 10:30 AM</strong></span>
+              <span style="font-size: 0.72rem; color: var(--text-dim);">Public Multi-Platform Index</span>
+            </div>
+
+            <!-- Original Source Card -->
+            <div class="original-source-box" id="original-source-card" style="background: #000000; border: 1px solid var(--border-hairline); border-radius: 6px; padding: 1.15rem; margin-bottom: 1.15rem;">
+              <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.35rem;">
+                ORIGINAL SOURCE
+              </div>
+              <div id="orig-source-title" style="font-size: 0.95rem; font-weight: 700; color: #ffffff; margin-bottom: 0.35rem;">
+                Submitted Web Link / Primary Report
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                <span>Author: <strong id="orig-source-author" style="color: #ffffff;">Editorial Publisher</strong></span>
+                <span>•</span>
+                <span>Published: <span id="orig-source-date" style="color: #ffffff;">Recent</span></span>
+              </div>
+              <div style="font-size: 0.78rem; word-break: break-all;">
+                <span style="color: var(--text-dim);">URL:</span> 
+                <a id="orig-source-url" href="#" target="_blank" rel="noopener noreferrer" style="color: #ffffff; text-decoration: underline;">
+                  Direct User Claim / Submission
+                </a>
+              </div>
+            </div>
+
+            <!-- Source Count & Platform Breakdown -->
+            <div class="source-breakdown-card" style="background: #000000; border: 1px solid var(--border-hairline); border-radius: 6px; padding: 1.15rem; margin-bottom: 1.15rem;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.4rem;">
+                <div>
+                  <span style="font-size: 1.15rem; font-weight: 800; color: #ffffff;" id="breakdown-total-count">Sources found: 8</span>
+                  <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">
+                    * Number of publicly retrievable matching sources found by this system. (Does not represent total number of posts on the internet.)
+                  </div>
+                </div>
+              </div>
+
+              <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 0.75rem 0 0.4rem; letter-spacing: 0.05em;">
+                Platform Breakdown:
+              </div>
+              <div class="platform-chips-row" id="platform-chips-container" style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
+                <span class="platform-chip chip-yt">YouTube: 3</span>
+                <span class="platform-chip chip-news">News websites: 4</span>
+                <span class="platform-chip chip-social">Instagram / Social: 1</span>
+              </div>
+            </div>
+
+            <!-- Spread Information Box -->
+            <div class="spread-info-box" id="spread-analytics-box" style="background: #000000; border: 1px solid var(--border-hairline); border-radius: 6px; padding: 1.15rem; margin-bottom: 1.15rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #ffffff; letter-spacing: 0.06em;">
+                  SPREAD & TEMPORAL PROPAGATION
+                </span>
+                <span id="spread-status-badge" class="badge-tag" style="background: #ffffff; color: #000000; font-weight: 800;">
+                  Rapid increase detected
+                </span>
+              </div>
+
+              <div class="spread-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; font-size: 0.78rem;">
+                <div style="background: #0d0d0d; border: 1px solid var(--border-hairline); padding: 0.5rem 0.65rem; border-radius: 4px;">
+                  <div style="color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase;">First observed:</div>
+                  <strong id="spread-first-observed" style="color: #ffffff;">Recent hours</strong>
+                </div>
+                <div style="background: #0d0d0d; border: 1px solid var(--border-hairline); padding: 0.5rem 0.65rem; border-radius: 4px;">
+                  <div style="color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase;">Latest observed:</div>
+                  <strong id="spread-latest-observed" style="color: #ffffff;">Just now</strong>
+                </div>
+                <div style="background: #0d0d0d; border: 1px solid var(--border-hairline); padding: 0.5rem 0.65rem; border-radius: 4px;">
+                  <div style="color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase;">Sources found:</div>
+                  <strong id="spread-sources-count" style="color: #ffffff;">8</strong>
+                </div>
+                <div style="background: #0d0d0d; border: 1px solid var(--border-hairline); padding: 0.5rem 0.65rem; border-radius: 4px;">
+                  <div style="color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase;">Platforms found:</div>
+                  <strong id="spread-platforms-count" style="color: #ffffff;">3</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- PLATFORMS / SOURCES FOUND -->
+            <div class="source-cards-header" style="margin-top: 1.25rem;">
+              <span class="source-cards-title">PLATFORMS / SOURCES FOUND</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">
+                Only showing platforms where actual sources were retrieved
+              </span>
+            </div>
+
+            <!-- Dynamic Source Cards Container -->
+            <div id="source-cards-container" class="source-cards-list">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Source Reliability & Legal Limitation Notice -->
+            <div style="background: rgba(0, 0, 0, 0.35); border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem; border-left: 3px solid #64748b;">
+              <div style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.45;">
+                ⚖️ <strong>Source Reliability Principle:</strong> Sources are labeled by type (Official, News, Reference, Social Media, Other). A source is not automatically called "true" simply because it is a news website. The source provides evidence/context; the final verification remains with the user.
+              </div>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.4rem; font-style: italic;">
+                ⚠️ <strong>Limitation Notice:</strong> Results represent publicly retrievable sources available to this system and may not include every occurrence across the internet or private accounts.
+              </div>
+            </div>
+
+            <!-- Final Verification Summary Box -->
+            <div class="verification-summary-box">
+              <div class="summary-title-row">
+                <span class="summary-title">VERIFICATION SUMMARY</span>
+                <span class="badge-tag" style="background: rgba(16,185,129,0.15); color: #6ee7b7;">Traceable Assessment</span>
+              </div>
+
+              <div class="summary-grid">
+                <div class="summary-stat-card">
+                  <div class="stat-label">Model Prediction</div>
+                  <div id="sum-pred" class="stat-val" style="color: var(--color-misleading);">MISLEADING</div>
+                </div>
+
+                <div class="summary-stat-card">
+                  <div class="stat-label">Evidence Status</div>
+                  <div id="sum-status" class="stat-val" style="font-size: 0.95rem; color: #fca5a5;">Contradicted</div>
+                </div>
+
+                <div class="summary-stat-card">
+                  <div class="stat-label">Matching Sources</div>
+                  <div id="sum-sources-count" class="stat-val">8</div>
+                </div>
+
+                <div class="summary-stat-card">
+                  <div class="stat-label">Platforms Active</div>
+                  <div id="sum-primary-count" class="stat-val" style="color: #60a5fa;">3</div>
+                </div>
+              </div>
+
+              <div class="summary-human-verdict">
+                <span class="human-label">Human Verification Recommendation:</span>
+                <span id="sum-human-verdict" class="human-val">Strongly recommended</span>
+              </div>
+
+              <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">
+                🔒 <strong>Epistemic Humility Principle:</strong> This system does not state that it has mathematically proven a claim to be true or false. External evidence and algorithmic indicators assist human judgment.
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+
+    <!-- ====================================================================
+         TAB 2: VERIFICATION HISTORY
+         ==================================================================== -->
+    <div id="tab-history" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span style="font-size: 1.2rem;">🕒</span>
+            <h2 class="panel-title">Verification History & Audit Log</h2>
+          </div>
+          <button id="btn-refresh-history" class="chip-btn" style="background: rgba(59,130,246,0.15); color: #93c5fd;">
+            🔄 Refresh History
+          </button>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          All previous claims evaluated by the system. Click <strong>[Reopen]</strong> on any entry to reload the full evidence cards and stylistic breakdown.
+        </p>
+
+        <div class="history-table-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Extracted Claim</th>
+                <th>ML Prediction</th>
+                <th>Evidence Status</th>
+                <th>Sources</th>
+                <th>Human Verification</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ====================================================================
+         TAB 3: BIG DATA ARCHITECTURE & BURST DETECTION
+         ==================================================================== -->
+    <div id="tab-bigdata" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span style="font-size: 1.2rem;">⚡</span>
+            <h2 class="panel-title">Big Data Layer — Apache Spark & HDFS Pipeline</h2>
+          </div>
+          <span class="badge-tag" style="background: rgba(245,158,11,0.2); color: #fcd34d;">PySpark ML & Streaming</span>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          How the system processes millions of social media streams and news items in a distributed Big Data architecture.
+        </p>
+
+        <!-- Big Data Flow Visualizer -->
+        <div class="spark-arch-flow">
+          <div class="arch-node">
+            <div class="arch-node-title">1. Large-Scale Stream</div>
+            <div class="arch-node-sub">Continuous RSS & Social</div>
+          </div>
+          <div class="arch-arrow">➔</div>
+
+          <div class="arch-node">
+            <div class="arch-node-title">2. HDFS Storage</div>
+            <div class="arch-node-sub">64 Partitions (Parquet)</div>
+          </div>
+          <div class="arch-arrow">➔</div>
+
+          <div class="arch-node">
+            <div class="arch-node-title">3. Apache Spark</div>
+            <div class="arch-node-sub">Distributed PySpark SQL</div>
+          </div>
+          <div class="arch-arrow">➔</div>
+
+          <div class="arch-node">
+            <div class="arch-node-title">4. Spark ML Pipeline</div>
+            <div class="arch-node-sub">Tokenizer + HashingTF + IDF</div>
+          </div>
+          <div class="arch-arrow">➔</div>
+
+          <div class="arch-node">
+            <div class="arch-node-title">5. Window Aggregator</div>
+            <div class="arch-node-sub">10-Min Sliding Burst Filter</div>
+          </div>
+          <div class="arch-arrow">➔</div>
+
+          <div class="arch-node" style="border-color: #3b82f6;">
+            <div class="arch-node-title" style="color: #60a5fa;">6. Evidence Verification</div>
+            <div class="arch-node-sub">Dashboard & Source Cards</div>
+          </div>
+        </div>
+
+        <!-- Big Data Live Metrics -->
+        <div class="summary-grid" style="margin-bottom: 1.5rem;">
+          <div class="summary-stat-card">
+            <div class="stat-label">Indexed Corpus Records</div>
+            <div class="stat-val" style="color: #60a5fa;">1,452,890</div>
+          </div>
+          <div class="summary-stat-card">
+            <div class="stat-label">HDFS Partitions</div>
+            <div class="stat-val">64 Blocks</div>
+          </div>
+          <div class="summary-stat-card">
+            <div class="stat-label">Spark Streaming Window</div>
+            <div class="stat-val">10m (2m Slide)</div>
+          </div>
+          <div class="summary-stat-card">
+            <div class="stat-label">Burst Threshold</div>
+            <div class="stat-val" style="color: #f59e0b;">&gt; 150 mentions / 10m</div>
+          </div>
+        </div>
+
+        <!-- Standalone Spark Script Code Viewer -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">
+            Production PySpark Batch & Structured Streaming Script
+          </span>
+          <span class="badge-tag" style="background: rgba(255,255,255,0.06); color: #94a3b8;">spark-submit ready</span>
+        </div>
+        <pre class="code-viewer-box" id="spark-code-display">
+# Loading PySpark pipeline code from server...
+        </pre>
+
+      </div>
+    </div>
+
+
+    <!-- ====================================================================
+         TAB 4: METHODOLOGY & EPITEMIC FRAMEWORK
+         ==================================================================== -->
+    <div id="tab-methodology" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span style="font-size: 1.2rem;">📖</span>
+            <h2 class="panel-title">Methodology & Source Verification Protocol</h2>
+          </div>
+          <span class="badge-tag" style="background: rgba(16,185,129,0.15); color: #6ee7b7;">Design Principles</span>
+        </div>
+
+        <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; display: flex; flex-direction: column; gap: 1rem;">
+          <div>
+            <h3 style="color: #fff; font-size: 1rem; margin-bottom: 0.3rem;">1. Moving Beyond "Percentage Prediction"</h3>
+            <p>
+              Traditional fake-news detection systems return an opaque confidence score like <em>"80% Fake"</em>. This gives the user no actionable information about why the content was flagged or what the factual reality actually is. Our system transforms fake-news detection from an ungrounded classification guess into an <strong>evidence-assisted verification tool</strong>.
+            </p>
+          </div>
+
+          <div>
+            <h3 style="color: #fff; font-size: 1rem; margin-bottom: 0.3rem;">2. Source Credibility Hierarchy</h3>
+            <p>External sources are retrieved via permitted live news feeds and knowledge bases, and categorized into transparent credibility tiers:</p>
+            <ul style="margin-left: 1.5rem; margin-top: 0.4rem;">
+              <li><strong style="color: #6ee7b7;">Official Government:</strong> Primary legislative, executive, and regulatory portals (.gov, .mil, official state gazettes).</li>
+              <li><strong style="color: #93c5fd;">Official Organizations:</strong> Verified international bodies (WHO, CDC, UN, Red Cross) and dedicated fact-checking units (Reuters Fact Check, AP Fact Check, Snopes).</li>
+              <li><strong style="color: #c4b5fd;">News Articles:</strong> Reputable global and national journalistic organizations adhering to journalistic correction standards.</li>
+              <li><strong style="color: #fcd34d;">Reference Sources:</strong> Encyclopedic sources (Wikipedia) providing historical entity definitions and contextual background.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 style="color: #fff; font-size: 1rem; margin-bottom: 0.3rem;">3. Stance & Relationship Classification</h3>
+            <p>
+              Rather than blindly assuming search results confirm a rumor, each snippet is compared with the extracted claim:
+              <strong>[SUPPORTS CLAIM]</strong>, <strong>[CONTRADICTS CLAIM]</strong>, <strong>[CONTEXT]</strong>, or <strong>[RELATIONSHIP UNCLEAR]</strong>.
+            </p>
+          </div>
+
+          <div>
+            <h3 style="color: #fff; font-size: 1rem; margin-bottom: 0.3rem;">4. Epistemic Humility</h3>
+            <p>
+              We explicitly acknowledge that TF-IDF + Logistic Regression only measures stylistic writing patterns (sensationalist markers vs. neutral reporting). External evidence provides traceable facts, but the final determination remains in the hands of the human verifier.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

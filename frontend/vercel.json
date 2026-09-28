@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://park-tutorials-achieve-enhancing.trycloudflare.com/api/$1"
+    }
+  ]
+}
